@@ -171,31 +171,31 @@ pub struct TaskInner {
     /// The context of the task
     ctx: UnsafeCell<TaskContext>,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     process_id: AtomicU64,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     /// 是否是所属进程下的主线程
     is_leader: AtomicBool,
 
     // #[cfg(feature = "monolithic")]
     // /// 初始化的trap上下文
     // pub trap_frame: UnsafeCell<TrapFrame>,
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     /// the page table token of the process which the task belongs to
     pub page_table_token: UnsafeCell<usize>,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     set_child_tid: AtomicU64,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     clear_child_tid: AtomicU64,
 
     /// 时间统计, 无论是否为宏内核架构都可能被使用到
     #[allow(unused)]
     time: UnsafeCell<TimeStat>,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     /// TODO: to support the sched_setaffinity
     ///
     /// TODO: move to the upper layer
@@ -205,7 +205,7 @@ pub struct TaskInner {
     /// 退出时是否向父进程发送SIG_CHILD
     pub send_sigchld_when_exit: bool,
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic", feature = "microkernel"))]
     /// The scheduler status of the task, which defines the scheduling policy and priority
     pub sched_status: UnsafeCell<SchedStatus>,
 
@@ -249,7 +249,7 @@ impl TaskInner {
         None
     }
 
-    #[cfg(feature = "monolithic")]
+    #[cfg(any(feature = "monolithic"))]
     /// Create a new task with the given entry function and stack size.
     pub fn new<F>(
         entry: F,
@@ -412,7 +412,7 @@ impl TaskInner {
     }
 }
 
-#[cfg(feature = "monolithic")]
+#[cfg(any(feature = "monolithic", feature = "microkernel"))]
 impl TaskInner {
     /// store the child thread ID at the location pointed to by child_tid in clone args
     pub fn set_child_tid(&self, tid: usize) {
@@ -508,12 +508,12 @@ impl TaskInner {
     pub fn get_ctx(&self) -> &TaskContext {
         unsafe { self.ctx.get().as_ref().unwrap() }
     }
-
+    #[cfg(not(feature = "microkernel"))]
     /// whether to send SIG_CHILD when the task exits
     pub fn get_sig_child(&self) -> bool {
         self.send_sigchld_when_exit
     }
-
+    #[cfg(not(feature = "microkernel"))]
     /// set whether to send SIG_CHILD when the task exits
     pub fn set_sig_child(&mut self, sig_child: bool) {
         self.send_sigchld_when_exit = sig_child;
@@ -526,6 +526,7 @@ impl TaskInner {
         self.ctx.get().as_mut().unwrap().fs_base = value;
     }
 
+    #[cfg(not(feature = "microkernel"))]
     /// To set whether the task will be blocked by a vfork child
     #[inline]
     pub fn set_vfork_child(&self, is_vfork_child: bool) {
@@ -533,6 +534,7 @@ impl TaskInner {
             .store(is_vfork_child, Ordering::Release);
     }
 
+    #[cfg(not(feature = "microkernel"))]
     /// 获取父进程blocked_by_vfork布尔值
     pub fn is_vfork_child(&self) -> bool {
         self.is_vforked_child.load(Ordering::Acquire)
@@ -564,26 +566,26 @@ impl TaskInner {
 
             time: UnsafeCell::new(TimeStat::new()),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             process_id: AtomicU64::new(0),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             is_leader: AtomicBool::new(false),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             page_table_token: UnsafeCell::new(0),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             set_child_tid: AtomicU64::new(0),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             clear_child_tid: AtomicU64::new(0),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             // 一开始默认都可以运行在每个CPU上
             cpu_set: AtomicU64::new(0),
 
-            #[cfg(feature = "monolithic")]
+            #[cfg(any(feature = "monolithic",feature = "microkernel"))]
             sched_status: UnsafeCell::new(SchedStatus {
                 policy: SchedPolicy::SCHED_FIFO,
                 priority: 1,
