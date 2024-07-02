@@ -177,10 +177,6 @@ pub struct TaskInner {
     pub cpu_set: AtomicU64,
 
     #[cfg(feature = "monolithic")]
-    /// 退出时是否向父进程发送SIG_CHILD
-    pub send_sigchld_when_exit: bool,
-
-    #[cfg(feature = "monolithic")]
     /// The scheduler status of the task, which defines the scheduling policy and priority
     pub sched_status: UnsafeCell<SchedStatus>,
 
@@ -232,7 +228,6 @@ impl TaskInner {
         stack_size: usize,
         process_id: u64,
         page_table_token: usize,
-        sig_child: bool,
         #[cfg(feature = "tls")] tls_area: (usize, usize),
     ) -> TaskInner
     where
@@ -248,8 +243,6 @@ impl TaskInner {
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
 
         t.entry = Some(Box::into_raw(Box::new(entry)));
-
-        t.set_sig_child(sig_child);
 
         t.process_id.store(process_id, Ordering::Release);
 
@@ -484,16 +477,6 @@ impl TaskInner {
         unsafe { self.ctx.get().as_ref().unwrap() }
     }
 
-    /// whether to send SIG_CHILD when the task exits
-    pub fn get_sig_child(&self) -> bool {
-        self.send_sigchld_when_exit
-    }
-
-    /// set whether to send SIG_CHILD when the task exits
-    pub fn set_sig_child(&mut self, sig_child: bool) {
-        self.send_sigchld_when_exit = sig_child;
-    }
-
     #[cfg(target_arch = "x86_64")]
     /// # Safety
     /// It is unsafe because it may cause undefined behavior if the `fs_base` is not a valid address.
@@ -562,10 +545,7 @@ impl TaskInner {
                 policy: SchedPolicy::SCHED_FIFO,
                 priority: 1,
             }),
-
-            #[cfg(feature = "monolithic")]
-            send_sigchld_when_exit: false,
-
+            
             #[cfg(feature = "monolithic")]
             is_vforked_child: AtomicBool::new(false),
         }
