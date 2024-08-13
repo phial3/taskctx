@@ -8,7 +8,23 @@ pub(crate) struct TaskStack {
     layout: Layout,
 }
 
+// arch_boot
+extern "C" {
+    fn current_boot_stack() -> *mut u8;
+}
+
 impl TaskStack {
+    pub fn new_init() -> Self {
+        let layout = 
+            Layout::from_size_align(axconfig::TASK_STACK_SIZE, 16).unwrap();
+        unsafe {
+            Self {
+                ptr: NonNull::new(current_boot_stack()).unwrap(),
+                layout,
+            }
+        }
+    }
+
     pub fn alloc(size: usize) -> Self {
         let layout = Layout::from_size_align(size, 16).unwrap();
         Self {
@@ -19,6 +35,10 @@ impl TaskStack {
 
     pub const fn top(&self) -> VirtAddr {
         unsafe { core::mem::transmute(self.ptr.as_ptr().add(self.layout.size())) }
+    }
+
+    pub const fn down(&self) -> VirtAddr {
+        unsafe { core::mem::transmute(self.ptr.as_ptr()) }
     }
 
     // #[cfg(feature = "monolithic")]

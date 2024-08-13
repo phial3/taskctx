@@ -33,7 +33,7 @@ impl FpState {
 /// and the next task restores its context from memory to CPU.
 #[allow(missing_docs)]
 #[repr(C)]
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TaskContext {
     pub sp: u64,
     pub tpidr_el0: u64,
@@ -55,8 +55,8 @@ pub struct TaskContext {
 
 impl TaskContext {
     /// Creates a new default context for a new task.
-    pub const fn new() -> Self {
-        unsafe { core::mem::MaybeUninit::zeroed().assume_init() }
+    pub fn new() -> Self {
+        Self::default()
     }
 
     /// Initializes the context for a new task, with the given entry point and
@@ -65,6 +65,14 @@ impl TaskContext {
         self.sp = kstack_top.as_usize() as u64;
         self.lr = entry as u64;
         self.tpidr_el0 = tls_area.as_usize() as u64;
+    }
+
+    pub fn thread_saved_fp(&self) -> usize {
+        self.r29 as usize
+    }
+
+    pub fn thread_saved_pc(&self) -> usize {
+        self.lr as usize
     }
 }
 
