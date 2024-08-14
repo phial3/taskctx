@@ -50,6 +50,14 @@ impl TaskContext {
         self.ra = entry;
         self.tp = tls_area.as_usize();
     }
+
+    pub fn thread_saved_fp(&self) -> usize {
+        self.s0 as usize
+    }
+
+    pub fn thread_saved_pc(&self) -> usize {
+        self.ra as usize
+    }
 }
 
 #[cfg(target_arch = "riscv32")]
