@@ -125,11 +125,13 @@ impl TaskContext {
             // calling a function. That means when entering a new task (`ret` in `context_switch`
             // is executed), (stack pointer + 8) should be 16-byte aligned.
             let frame_ptr = (kstack_top.as_mut_ptr() as *mut u64).sub(1);
+            let rbp = frame_ptr as u64;
             let frame_ptr = (frame_ptr as *mut ContextSwitchFrame).sub(1);
             core::ptr::write(
                 frame_ptr,
                 ContextSwitchFrame {
                     rip: entry as _,
+                    rbp: rbp,
                     ..Default::default()
                 },
             );
@@ -137,6 +139,16 @@ impl TaskContext {
         }
         self.kstack_top = kstack_top;
         self.fs_base = tls_area.as_usize();
+    }
+
+    pub fn thread_saved_fp(&self) -> usize {
+        let frame_ptr = self.rsp as *const ContextSwitchFrame;
+        unsafe {(*frame_ptr).rbp as usize}
+    }
+
+    pub fn thread_saved_pc(&self) -> usize {
+        let frame_ptr = self.rsp as *const ContextSwitchFrame;
+        unsafe {(*frame_ptr).rip as usize}
     }
 }
 
