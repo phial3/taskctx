@@ -220,6 +220,14 @@ impl TaskInner {
         None
     }
 
+    #[inline]
+    pub fn get_kernel_stack_down(&self) -> Option<usize> {
+        if let Some(kstack) = &self.kstack {
+            return Some(kstack.down().as_usize());
+        }
+        None
+    }
+
     #[cfg(feature = "monolithic")]
     /// Create a new task with the given entry function and stack size.
     pub fn new<F>(
@@ -239,6 +247,7 @@ impl TaskInner {
             #[cfg(feature = "tls")]
             tls_area,
         );
+
         log::debug!("new task: {}", t.id_name());
         let kstack = TaskStack::alloc(align_up_4k(stack_size));
 
@@ -472,10 +481,6 @@ impl TaskInner {
         unsafe { *status }
     }
 
-    /// get the task context for task switch
-    pub fn get_ctx(&self) -> &TaskContext {
-        unsafe { self.ctx.get().as_ref().unwrap() }
-    }
 
     #[cfg(target_arch = "x86_64")]
     /// # Safety
@@ -571,6 +576,7 @@ impl TaskInner {
             // FIXME: name 现已被用作 prctl 使用的程序名，应另选方式判断 idle 进程
             t.is_idle = true;
         }
+        t.kstack =  Some(TaskStack::new_init());
         t
     }
 
@@ -584,6 +590,18 @@ impl TaskInner {
     #[inline]
     pub const fn is_idle(&self) -> bool {
         self.is_idle
+    }
+
+    /// get the task context for task switch
+    #[inline]
+    pub fn get_ctx(&self) -> &TaskContext {
+        unsafe { self.ctx.get().as_ref().unwrap() }
+    }
+
+    /// return ctx unwind
+    #[inline]
+    pub fn ctx_unwind(&self) -> (usize, usize) {
+        (self.get_ctx().thread_saved_pc(), self.get_ctx().thread_saved_fp())
     }
 
     /// Set the task waiting for reschedule
