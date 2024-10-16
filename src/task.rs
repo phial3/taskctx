@@ -16,6 +16,7 @@ use memory_addr::{align_up_4k, VirtAddr};
 /// A unique identifier for a thread.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct TaskId(u64);
+pub const MAX_RT_PRIO: usize = 99;
 
 static ID_COUNTER: AtomicU64 = AtomicU64::new(1);
 impl TaskId {
@@ -57,6 +58,8 @@ pub enum SchedPolicy {
     SCHED_BATCH = 3,
     /// The idle task scheduler
     SCHED_IDLE = 5,
+    /// The deadline scheduler
+    SCHED_DEADLINE = 6,
     /// Unknown scheduler
     SCHED_UNKNOWN,
 }
@@ -70,6 +73,7 @@ impl From<usize> for SchedPolicy {
             2 => SchedPolicy::SCHED_RR,
             3 => SchedPolicy::SCHED_BATCH,
             5 => SchedPolicy::SCHED_IDLE,
+            6 => SchedPolicy::SCHED_DEADLINE,
             _ => SchedPolicy::SCHED_UNKNOWN,
         }
     }
@@ -84,6 +88,7 @@ impl From<SchedPolicy> for isize {
             SchedPolicy::SCHED_RR => 2,
             SchedPolicy::SCHED_BATCH => 3,
             SchedPolicy::SCHED_IDLE => 5,
+            SchedPolicy::SCHED_DEADLINE => 6,
             SchedPolicy::SCHED_UNKNOWN => -1,
         }
     }
