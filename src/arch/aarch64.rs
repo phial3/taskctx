@@ -83,7 +83,7 @@ impl TaskContext {
 ///
 /// This function is unsafe because it directly manipulates the CPU registers.
 pub unsafe extern "C" fn context_switch(_current_task: &mut TaskContext, _next_task: &TaskContext) {
-    asm!(
+    naked_asm!(
         "
         // save old context (callee-saved registers)
         stp     x29, x30, [x0, 12 * 8]
